@@ -99,30 +99,6 @@ OpenSpec (2 active)
 | **80–119 columns** | Full names in single-change mode, initials in multi-change mode |
 | **<80 columns** | Abbreviated initials in all modes; progress bar replaced with compact "N/M" counter; change names truncated to fit |
 
-## Changelog
-
-### v0.3.0 (current)
-
-- **Interactive dialog** — press `Ctrl+Alt+O` to open a full-change-status dialog
-- **Improved widget rendering** — better width adaptation and artifact status indicators
-- **Enhanced error resilience** — graceful handling of CLI failures and non-OpenSpec projects
-
-### v0.2.0
-
-- Multi-change overview with condensed per-change lines
-- Dynamic width adaptation (full names on wide terminals, initials on narrow)
-- Automatic data refresh with debounced updates
-
-### v0.1.1
-
-- Bug fixes and theme compatibility improvements
-
-### v0.1.0
-
-- Initial release with single-change detailed widget view
-- TUI widget displayed above the editor
-- Artifact status indicators (proposal, design, specs, tasks)
-
 ## Development
 
 ```bash
