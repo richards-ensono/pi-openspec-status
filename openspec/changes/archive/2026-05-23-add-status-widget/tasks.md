@@ -33,5 +33,5 @@
 - [x] 4.1 Handle non-OpenSpec project gracefully (no widget, no error)
 - [x] 4.2 Handle CLI execution failures (retain last known state, show muted error indicator)
 - [x] 4.3 Cache rendered lines and only update widget when content actually changes (avoid unnecessary TUI re-renders)
-- [ ] 4.4 Test with various OpenSpec change states (no tasks, complete, partial artifacts, multiple schemas)
+- [x] 4.4 Test with various OpenSpec change states (no tasks, complete, partial artifacts, multiple schemas)
 - [x] 4.5 Verify package.json `pi.extensions` field points to `./extension/index.ts`
