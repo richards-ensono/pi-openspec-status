@@ -4,7 +4,13 @@ A [pi](https://pi.dev) coding agent extension that displays the active OpenSpec 
 
 ## Features
 
-- TODO
+- **Persistent TUI widget** — always visible above the editor in interactive mode, automatically suppressed in non-interactive modes (`-p`, `--json`, headless RPC)
+- **Single-change detailed view** — when one active change exists, shows the change name, schema, per-artifact status (proposal, design, specs, tasks), and a task progress bar with apply dependency hints
+- **Multi-change overview** — when multiple active changes exist, shows a header with the active count followed by one condensed line per change with artifact initials, task counters, and blocked-dependency hints
+- **Artifact status indicators** — uses filled circle (●) for done, open circle (○) for ready, and dotted circle (◌) for blocked, each colored with theme-aware success/muted/warning colors
+- **Dynamic width adaptation** — full artifact names and progress bars on wide terminals (≥120 cols); abbreviated initials and compact counters on narrow terminals (<80 cols)
+- **Automatic data refresh** — fetches from the `openspec` CLI on session start, after each agent turn/end (debounced 500ms), when tools write to `openspec/` or bash commands reference openspec, plus a fallback refresh every 30 seconds
+- **Error resilience** — gracefully shows "CLI not found" when openspec is unavailable, silently no-ops when not in an OpenSpec project, and retains last-known state with a muted error indicator on CLI failures
 
 ## Install
 
@@ -32,7 +38,52 @@ Once installed, the widget appears automatically when you're in a project that h
 
 ### Display
 
-TODO
+The widget renders different layouts depending on the number of active changes and available terminal width.
+
+#### No active changes
+
+```
+No active OpenSpec changes
+```
+
+#### Single active change (3-line detailed view)
+
+```
+◷ add-auth (spec-driven)
+Artifacts: proposal ● design ○ specs ○ tasks ○
+Tasks: ████░░░░░░ 3/7 · apply: apply.sh
+```
+
+- **Line 1:** Status icon (`✓` when fully complete, `◷` in-progress, `✗` blocked/error), change name, and schema name in parentheses
+- **Line 2:** Each artifact (proposal, design, specs, tasks) with a status icon — `●` done (success), `○` ready (muted), `◌` blocked (warning)
+- **Line 3:** Task progress bar with completed/total count, plus an `apply:` hint when the change requires specific apply steps
+
+#### Multiple active changes (header + condensed lines)
+
+```
+OpenSpec (2 active)
+◷ add-auth  P ● D ○ S ○ T ○  3/7
+✗ bugfix    P ● D ◌ S ○ T ○  0/0  (blocked: design)
+```
+
+- **Header:** "OpenSpec (N active)" in accent color
+- **Per change (one line):** Status icon, truncated change name, artifact initials (`P`=proposal, `D`=design, `S`=specs, `T`=tasks) each with a status icon, task counter (completed/total), and a blocked-dependency hint when applicable
+
+#### Error states
+
+| Condition | Display |
+|-----------|---------|
+| OpenSpec CLI not installed | `OpenSpec CLI not found` (warning color, single line) |
+| Not an OpenSpec project | Widget does not render (no-op) |
+| CLI invocation fails | Retains last known state with muted error indicator |
+
+#### Width adaptation
+
+| Width | Behavior |
+|-------|----------|
+| **≥120 columns** | Full artifact names in all modes; progress bar shown in single-change mode |
+| **80–119 columns** | Full names in single-change mode, initials in multi-change mode |
+| **<80 columns** | Abbreviated initials in all modes; progress bar replaced with compact "N/M" counter; change names truncated to fit |
 
 ## Development
 
