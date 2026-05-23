@@ -1,6 +1,6 @@
 # pi-openspec-status
 
-A [pi](https://pi.dev) coding agent extension that displays the active OpenSpec change status as a persistent TUI widget above the editor.
+A [pi](https://pi.dev) coding agent extension that displays the active OpenSpec change status as a persistent TUI widget above the editor, with an interactive dialog for detailed views.
 
 ## Features
 
@@ -9,6 +9,7 @@ A [pi](https://pi.dev) coding agent extension that displays the active OpenSpec 
 - **Multi-change overview** — when multiple active changes exist, shows a header with the active count followed by one condensed line per change with artifact initials, task counters, and blocked-dependency hints
 - **Artifact status indicators** — uses filled circle (●) for done, open circle (○) for ready, and dotted circle (◌) for blocked, each colored with theme-aware success/muted/warning colors
 - **Dynamic width adaptation** — full artifact names and progress bars on wide terminals (≥120 cols); abbreviated initials and compact counters on narrow terminals (<80 cols)
+- **Interactive dialog** — press `Ctrl+Alt+O` to open a scrollable dialog with full change details, task breakdowns, and dependency info
 - **Automatic data refresh** — fetches from the `openspec` CLI on session start, after each agent turn/end (debounced 500ms), when tools write to `openspec/` or bash commands reference openspec, plus a fallback refresh every 30 seconds
 - **Error resilience** — gracefully shows "CLI not found" when openspec is unavailable, silently no-ops when not in an OpenSpec project, and retains last-known state with a muted error indicator on CLI failures
 
@@ -21,12 +22,25 @@ pi install git:github.com/mattoopie/pi-openspec-status
 Or with a specific version:
 
 ```bash
-pi install git:github.com/mattoopie/pi-openspec-status@v0.1.0
+pi install git:github.com/mattoopie/pi-openspec-status@v0.3.0
 ```
 
 ## Usage
 
 Once installed, the widget appears automatically when you're in a project that has an `openspec/changes/` directory with active change subdirectories.
+
+### Interactive dialog
+
+Press **`Ctrl+Alt+O`** in interactive mode to open a scrollable dialog displaying the full OpenSpec change status. The dialog shows:
+
+- **All active changes** with their artifact completion status
+- **Task breakdowns** with completed/total counts per change
+- **Dependency information** for blocked artifacts
+- **Apply requirements** when a change needs specific steps to apply
+
+This is useful when the compact widget above the editor doesn't show enough detail, or when you want to browse through changes in a larger view.
+
+> **Note:** The dialog is only available in interactive mode (it is suppressed in `-p`, `--json`, and headless RPC sessions).
 
 ### Requirements
 
@@ -84,6 +98,30 @@ OpenSpec (2 active)
 | **≥120 columns** | Full artifact names in all modes; progress bar shown in single-change mode |
 | **80–119 columns** | Full names in single-change mode, initials in multi-change mode |
 | **<80 columns** | Abbreviated initials in all modes; progress bar replaced with compact "N/M" counter; change names truncated to fit |
+
+## Changelog
+
+### v0.3.0 (current)
+
+- **Interactive dialog** — press `Ctrl+Alt+O` to open a full-change-status dialog
+- **Improved widget rendering** — better width adaptation and artifact status indicators
+- **Enhanced error resilience** — graceful handling of CLI failures and non-OpenSpec projects
+
+### v0.2.0
+
+- Multi-change overview with condensed per-change lines
+- Dynamic width adaptation (full names on wide terminals, initials on narrow)
+- Automatic data refresh with debounced updates
+
+### v0.1.1
+
+- Bug fixes and theme compatibility improvements
+
+### v0.1.0
+
+- Initial release with single-change detailed widget view
+- TUI widget displayed above the editor
+- Artifact status indicators (proposal, design, specs, tasks)
 
 ## Development
 
