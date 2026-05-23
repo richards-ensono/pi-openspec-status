@@ -178,33 +178,15 @@ export default function (pi: ExtensionAPI) {
 	pi.on("session_start", async (_event, ctx) => {
 		if (!ctx.hasUI) return;
 
-		// Check CLI availability
-		const cliResult = await checkCliAvailable(pi);
-		cliAvailable = cliResult.available;
-		cliChecked = true;
+		// Show loading state immediately so navigation is not blocked
+		const theme = ctx.ui.theme;
+		const width = getTerminalWidth();
+		const loadingLines = [theme.fg("muted", "OpenSpec: Loading...")];
+		ctx.ui.setWidget("openspec", loadingLines);
+		cachedLines = loadingLines;
+		cachedWidth = width;
 
-		if (!cliAvailable) {
-			// Show "CLI not found" message immediately
-			const theme = ctx.ui.theme;
-			const width = getTerminalWidth();
-			const lines = [theme.fg("warning", "OpenSpec CLI not found")];
-			ctx.ui.setWidget("openspec", lines);
-			cachedLines = lines;
-			cachedWidth = width;
-		} else {
-			// Show loading state immediately while fetching
-			const theme = ctx.ui.theme;
-			const width = getTerminalWidth();
-			const loadingLines = [theme.fg("muted", "OpenSpec: Loading...")];
-			ctx.ui.setWidget("openspec", loadingLines);
-			cachedLines = loadingLines;
-			cachedWidth = width;
-
-			// Initial data fetch
-			await refresh(ctx);
-		}
-
-		// Start 30s fallback refresh interval
+		// Start 30s fallback refresh interval immediately
 		if (refreshInterval) {
 			clearInterval(refreshInterval);
 		}
@@ -213,6 +195,29 @@ export default function (pi: ExtensionAPI) {
 				console.error("OpenSpec widget interval refresh error:", err);
 			});
 		}, 30000);
+
+		// Do CLI check and initial data fetch asynchronously so pi can
+		// navigate to the session immediately without waiting for results.
+		(async () => {
+			const cliResult = await checkCliAvailable(pi);
+			cliAvailable = cliResult.available;
+			cliChecked = true;
+
+			if (!cliAvailable) {
+				// Show "CLI not found" message
+				const th = ctx.ui.theme;
+				const w = getTerminalWidth();
+				const lines = [th.fg("warning", "OpenSpec CLI not found")];
+				ctx.ui.setWidget("openspec", lines);
+				cachedLines = lines;
+				cachedWidth = w;
+				return;
+			}
+
+			await refresh(ctx);
+		})().catch((err) => {
+			console.error("OpenSpec widget startup error:", err);
+		});
 	});
 
 	// session_shutdown: clean up
