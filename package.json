@@ -1,0 +1,36 @@
+{
+  "name": "pi-openspec-status",
+  "version": "0.1.0",
+  "description": "Pi coding agent extension that displays OpenSpec change status — active change, artifact completion, and task progress — as a persistent TUI widget.",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "openspec",
+    "pi-coding-agent"
+  ],
+  "license": "MIT",
+  "author": "Mattoopie <mattoopie@users.noreply.github.com>",
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "extension/"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mattoopie/pi-openspec-status.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mattoopie/pi-openspec-status/issues"
+  },
+  "homepage": "https://github.com/mattoopie/pi-openspec-status#readme",
+  "type": "module",
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./extension/index.ts"
+    ]
+  }
+}
