@@ -38,12 +38,12 @@ function renderWidget(ctx: ExtensionContext): void {
 		for (const artifact of ARTIFACT_NAMES) {
 			const status = change.artifacts[artifact];
 			const icon = status === "done" ? t.fg("success", "✓") : t.fg("dim", "○");
-			parts.push(`${icon}${artifact}`);
+			parts.push(`${icon} ${artifact}`);
 		}
 		{
 			const status = change.artifacts.specs;
 			const icon = status === "done" ? t.fg("success", "✓") : t.fg("dim", "○");
-			parts.push(`${icon}specs(${change.specCount})`);
+			parts.push(`${icon} specs(${change.specCount})`);
 		}
 
 		// Task counter
