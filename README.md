@@ -44,8 +44,8 @@ When no active changes are detected:
 When changes are active:
 ```
 ■ OpenSpec
-  feat-auth    ✓proposal ✓design ○tasks ✓specs(3)  3/5 tasks
-  fix-login    ✓proposal ○design ○tasks ○specs(1)  1/8 tasks
+  feat-auth    ✓ proposal ✓ design ○tasks ✓ specs(3)  3/5 tasks
+  fix-login    ✓ proposal ○ design ○tasks ○ specs(1)  1/8 tasks
 ```
 
 Footer status (single change):
