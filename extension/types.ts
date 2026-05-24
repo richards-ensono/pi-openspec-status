@@ -33,3 +33,11 @@ export interface WidgetState {
 	error: string | null;
 	lastRefresh: number;
 }
+
+/** Action dispatched from the interactive overlay to the shortcut handler */
+export type OverlayAction =
+	| { type: "apply"; changeName: string }
+	| { type: "explore"; changeName: string }
+	| { type: "archive"; changeName: string }
+	| { type: "propose" }
+	| { type: "cancel" };
