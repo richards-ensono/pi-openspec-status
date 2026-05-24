@@ -62,7 +62,6 @@ Press **`Ctrl+Alt+O`** in interactive mode to open a scrollable dialog displayin
 - **All active changes** with their artifact completion status
 - **Task breakdowns** with completed/total counts per change
 - **Dependency information** for blocked artifacts
-- **Apply requirements** when a change needs specific steps to apply
 
 This is useful when the compact widget above the editor doesn't show enough detail, or when you want to browse through changes in a larger view.
 
@@ -91,12 +90,12 @@ No active OpenSpec changes
 ```
 ◷ add-auth (spec-driven)
 Artifacts: proposal ● design ○ specs ○ tasks ○
-Tasks: ████░░░░░░ 3/7 · apply: apply.sh
+Tasks: ████░░░░░░ 3/7
 ```
 
 - **Line 1:** Status icon (`✓` when fully complete, `◷` in-progress, `✗` blocked/error), change name, and schema name in parentheses
 - **Line 2:** Each artifact (proposal, design, specs, tasks) with a status icon — `●` done (success), `○` ready (muted), `◌` blocked (warning)
-- **Line 3:** Task progress bar with completed/total count, plus an `apply:` hint when the change requires specific apply steps
+- **Line 3:** Task progress bar with completed/total count
 
 #### Multiple active changes (header + condensed lines)
 
