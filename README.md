@@ -18,9 +18,11 @@ A [pi](https://pi.dev) coding agent extension that displays the active OpenSpec 
 ## Screenshots
 
 ![Widget screenshot](https://raw.githubusercontent.com/mattoopie/pi-openspec-status/main/assets/widget.png)
+
 *Widget showing a single active change with artifact status and task progress*
 
 ![Overlay dialog screenshot](https://raw.githubusercontent.com/mattoopie/pi-openspec-status/main/assets/overlay.png)
+
 *Interactive overlay dialog showing detailed change breakdown and dependencies*
 
 ## Install
