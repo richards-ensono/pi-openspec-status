@@ -109,7 +109,7 @@ The widget SHALL handle error states gracefully without crashing or disrupting t
 - **THEN** the widget displays "OpenSpec CLI not found" on a single line
 
 #### Scenario: Not an OpenSpec project
-- **WHEN** the `openspec list --json` command fails because no OpenSpec project is initialized
+- **WHEN** the `openspec list --json` command fails because no OpenSpec project is found in the resolved directory (current working directory or git root fallback)
 - **THEN** the widget does not render (no-op)
 
 #### Scenario: CLI invocation fails

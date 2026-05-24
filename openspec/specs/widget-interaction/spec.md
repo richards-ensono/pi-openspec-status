@@ -119,10 +119,10 @@ The overlay SHALL display a hint bar showing available action keys and their fun
 - **THEN** the hint bar shows "p propose new · esc cancel" with other action labels shown in muted/dim style
 
 ### Requirement: Data is fetched on overlay open
-The overlay SHALL fetch fresh change data when it opens, using the same data layer as the status widget.
+The overlay SHALL fetch fresh change data when it opens, using the same data layer and resolved directory path as the status widget.
 
 #### Scenario: Fresh data on open
 - **WHEN** the overlay opens
-- **THEN** it calls `fetchActiveChanges()` to get the current state of all changes
+- **THEN** it calls `fetchActiveChanges()` to get the current state of all changes, using the resolved `openspec/changes` directory (current working directory or git root fallback)
 - **AND** displays the result (or an error indicator if the CLI fails)
 
