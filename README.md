@@ -1,27 +1,29 @@
 # pi-openspec-status
 
-[![Publish workflow](https://github.com/mattoopie/pi-openspec-status/actions/workflows/publish.yml/badge.svg)](https://github.com/mattoopie/pi-openspec-status/actions/workflows/publish.yml)
+[![Publish workflow](https://github.com/richards-ensono/pi-openspec-status/actions/workflows/publish.yml/badge.svg)](https://github.com/richards-ensono/pi-openspec-status/actions/workflows/publish.yml)
 [![npm version](https://img.shields.io/npm/v/pi-openspec-status.svg)](https://www.npmjs.com/package/pi-openspec-status)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/richards-ensono/pi-openspec-status/badge)](https://securityscorecards.dev/viewer/?uri=github.com/richards-ensono/pi-openspec-status)
 
 A [pi](https://pi.dev) coding agent extension that displays the active OpenSpec change status as a persistent TUI widget above the editor, with an interactive dialog for detailed views.
 
 ## Features
 
 - **Persistent TUI widget** — always visible above the editor in interactive mode, automatically suppressed in non-interactive modes (`-p`, `--json`, headless RPC)
-- **Single-change detailed view** — when one active change exists, shows the change name, schema, per-artifact status (proposal, design, specs, tasks), and a task progress bar with apply dependency hints
-- **Multi-change overview** — when multiple active changes exist, shows a header with the active count followed by one condensed line per change with aligned change names, artifact labels, task counters, and blocked-dependency hints
+- **Single-change detailed view** — when one active change exists, shows the change name, schema, OpenSpec workflow-artifact status (proposal, design, specs, tasks), and task progress
+- **Multi-change overview** — when multiple active changes exist, shows aligned change-name and artifact columns, task counters, and blocked-dependency hints; artifact names are shown in full when every row fits, otherwise all rows use initials
 - **Artifact status indicators** — uses filled circle (●) for done, open circle (○) for ready, and dotted circle (◌) for blocked, each colored with theme-aware success/muted/warning colors
 - **Interactive dialog** — press `Ctrl+Alt+O` to open a scrollable dialog with full change details, task breakdowns, and dependency info
-- **Automatic data refresh** — event-driven refreshes fetch from the `openspec` CLI on session start, after each agent turn/end (debounced 500ms), and when tools write to `openspec/` (with either path separator) or Bash/PowerShell commands reference openspec; a bounded fallback safety poll starts at 30 seconds and backs off to at most 120 seconds when unchanged
+- **Automatic data refresh** — checks the `openspec` CLI on session start, after each agent turn/end (debounced 500ms), when tools write to `openspec/` using either path separator, or when Bash/PowerShell commands reference openspec. Non-overlapping fallback polling starts at 30 seconds and backs off to at most 120 seconds when unchanged; unchanged validated snapshots reuse cached details
+- **Cross-platform session support** — resolves each Pi session's project directory independently, reads task files with canonical-path checks, and uses a cached Windows CLI launcher fallback when needed
 - **Error resilience** — gracefully shows "CLI not found" when openspec is unavailable, silently no-ops when not in an OpenSpec project, and retains last-known state with a muted error indicator on CLI failures
 
 ## Screenshots
 
-![Widget screenshot](https://raw.githubusercontent.com/mattoopie/pi-openspec-status/main/assets/widget.png)
+![Widget screenshot](https://raw.githubusercontent.com/richards-ensono/pi-openspec-status/main/assets/widget.png)
 
 *Widget showing a single active change with artifact status and task progress*
 
-![Overlay dialog screenshot](https://raw.githubusercontent.com/mattoopie/pi-openspec-status/main/assets/overlay.png)
+![Overlay dialog screenshot](https://raw.githubusercontent.com/richards-ensono/pi-openspec-status/main/assets/overlay.png)
 
 *Interactive overlay dialog showing detailed change breakdown and dependencies*
 
@@ -36,19 +38,19 @@ pi install npm:pi-openspec-status
 Or with a specific version:
 
 ```bash
-pi install npm:pi-openspec-status@0.8.1
+pi install npm:pi-openspec-status@0.3.0
 ```
 
 ### From GitHub
 
 ```bash
-pi install git:github.com/mattoopie/pi-openspec-status
+pi install git:github.com/richards-ensono/pi-openspec-status
 ```
 
 Or with a specific version:
 
 ```bash
-pi install git:github.com/mattoopie/pi-openspec-status@v0.8.1
+pi install git:github.com/richards-ensono/pi-openspec-status@v0.3.0
 ```
 
 ## Usage
@@ -60,17 +62,20 @@ Once installed, the widget appears automatically when you're in a project that h
 Press **`Ctrl+Alt+O`** in interactive mode to open a scrollable dialog displaying the full OpenSpec change status. The dialog shows:
 
 - **All active changes** with their artifact completion status
-- **Task breakdowns** with completed/total counts per change
+- **OpenSpec task-progress breakdowns** with completed/total counts per change
 - **Dependency information** for blocked artifacts
 
 This is useful when the compact widget above the editor doesn't show enough detail, or when you want to browse through changes in a larger view.
 
 > **Note:** The dialog is only available in interactive mode (it is suppressed in `-p`, `--json`, and headless RPC sessions).
 
+### Hosted rendering width
+
+The widget uses stdout's terminal width when available. For hosted clients with piped stdout, set `PI_OPENSPEC_STATUS_WIDTH` to a positive integer (for example, `120`); otherwise the width defaults to 120 columns. The interactive overlay still requires a client that supports custom terminal UI.
+
 ### Requirements
 
-On Windows, the extension first tries Pi's normal command execution. If that fails, it retries through `cross-spawn` to support npm's Windows launchers. A successful fallback is cached per Pi API instance and reused for availability checks and list/status commands. Both launchers resolve `openspec` from the inherited environment; the extension does not locate a JavaScript entry point or explicitly run OpenSpec through Node.
-
+- Pi Coding Agent `>=0.80.0 <2.0.0` (the package declares compatible Pi and TUI peer dependencies, including Pi 1.x). The host's own Node.js requirements also apply; development validation uses Node.js 24.
 - A project using [OpenSpec](https://github.com/fission-ai/openspec) with changes in `openspec/changes/`
 - Each change directory may contain:
   - `.openspec.yaml` — with a `schema` field (optional, defaults to `"spec-driven"`)
@@ -91,13 +96,13 @@ No active OpenSpec changes
 
 ```
 ◷ add-auth (spec-driven)
-Artifacts: proposal ● design ○ specs ○ tasks ○
-Tasks: ████░░░░░░ 3/7
+Workflow artifacts: proposal ● design ○ specs ○ tasks ○
+OpenSpec task progress: ████░░░░░░ 3/7
 ```
 
 - **Line 1:** Status icon (`✓` when fully complete, `◷` in-progress, `✗` blocked/error), change name, and schema name in parentheses
-- **Line 2:** Each artifact (proposal, design, specs, tasks) with a status icon — `●` done (success), `○` ready (muted), `◌` blocked (warning)
-- **Line 3:** Task progress bar with completed/total count
+- **Line 2:** Each OpenSpec workflow artifact (proposal, design, specs, tasks) with a status icon — `●` done (success), `○` ready (muted), `◌` blocked (warning)
+- **Line 3:** OpenSpec task-progress bar with completed/total count. This is workflow progress, not a claim that code was tested, verified, or security-reviewed.
 
 #### Multiple active changes (header + condensed lines)
 
@@ -108,9 +113,7 @@ OpenSpec (2 active)
 ```
 
 - **Header:** "OpenSpec (N active)" in accent color
-- **Per change (one line):** Status icon, truncated change name in a compact padded column (sized to the longest displayed name, capped at 35% of the width), artifact labels (`P`=proposal, `D`=design, `S`=specs, `T`=tasks) each with a status icon, task counter (completed/total), and a blocked-dependency hint when applicable. Full artifact names are used when they fit on every row; otherwise all rows use initials.
-
-When stdout does not report a usable terminal width, the widget uses `PI_OPENSPEC_STATUS_WIDTH` if set to a positive integer, or defaults to 120 columns. Set the environment variable to the target width when running pi behind a web/RPC client; the extension does not receive the browser viewport width automatically.
+- **Per change (one line):** Status icon, truncated/padded change name, artifact names (or consistent initials when space is limited) with status icons, task counter (completed/total), and a blocked-dependency hint when applicable. Below 80 columns, artifact labels use initials and the single-change progress display uses a compact counter.
 
 #### Error states
 
@@ -118,16 +121,36 @@ When stdout does not report a usable terminal width, the widget uses `PI_OPENSPE
 |-----------|---------|
 | OpenSpec CLI not installed | `OpenSpec CLI not found` (warning color, single line) |
 | Not an OpenSpec project | Widget does not render (no-op) |
-| CLI invocation fails | Retains last known state with muted error indicator |
+| CLI invocation fails or returns invalid data | Retains the last known safe state when available; otherwise shows a bounded error |
 
+
+### Task-group syntax
+
+The overlay recognizes groups introduced by a `## ` heading and counts only unindented task lines in exactly one of these forms:
+
+```md
+- [ ] pending task text
+- [x] completed task text
+```
+
+Other checkbox-like content (including indented lines, prose, code blocks, or checkboxes without trailing task text) is ignored. Recognized counts communicate OpenSpec workflow progress only; they are not a comprehensive audit of every task-like line and do not imply testing, verification, or security review.
+
+## Governance and security
+
+- [Contribution guide](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Maintainer security settings](.github/MAINTAINERS.md)
 
 ## Development
 
 ```bash
 # Clone and install dependencies
-git clone https://github.com/mattoopie/pi-openspec-status.git
+git clone https://github.com/richards-ensono/pi-openspec-status.git
 cd pi-openspec-status
-npm install
+npm ci --ignore-scripts
+npm run typecheck
+npm run lint
+npm test
 
 # Test locally with pi
 pi -e ./extension/index.ts

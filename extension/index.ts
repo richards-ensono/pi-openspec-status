@@ -30,6 +30,7 @@ export default function (pi: ExtensionAPI) {
 		details: new Map(),
 		taskGroups: new Map(),
 		error: null,
+		lastRefresh: 0,
 	};
 
 	// The detailed data corresponds to this last fully successful list snapshot.
@@ -142,6 +143,7 @@ export default function (pi: ExtensionAPI) {
 			state = {
 				...state,
 				error: listed.error,
+				lastRefresh: Date.now(),
 			};
 			updateWidget(ctx);
 			return { changed: false, successful: false };
@@ -169,12 +171,10 @@ export default function (pi: ExtensionAPI) {
 			return { changed: false, successful: false };
 		}
 
-		state = {
-			changes: listed.changes,
-			details,
-			taskGroups,
-			error,
-		};
+		// Never replace a last known safe snapshot with failed/partial details.
+		state = error && state.changes.length > 0
+			? { ...state, error, lastRefresh: Date.now() }
+			: { changes: error ? [] : listed.changes, details, taskGroups, error, lastRefresh: Date.now() };
 
 		// Do not cache a snapshot whose detailed fetch failed. Keeping the old
 		// fingerprint causes the next refresh to retry the status requests.
@@ -357,7 +357,11 @@ export default function (pi: ExtensionAPI) {
 	// session_start: CLI check, initial fetch, render
 	pi.on("session_start", async (_event, ctx) => {
 		resetOpenSpecDir(ctx.cwd);
-		if (!ctx.hasUI) return;
+		// Session replacement may arrive without shutdown, including a headless
+		// session. Invalidate old work and timers before checking UI availability.
+		if (fallbackTimeout) clearTimeout(fallbackTimeout);
+		fallbackTimeout = null;
+		debouncedRefresh.cancel();
 
 		// Reset shutdown flag and bump the generation counter.
 		// Old async work that captured a lower gen value will see
@@ -376,9 +380,11 @@ export default function (pi: ExtensionAPI) {
 			details: new Map(),
 			taskGroups: new Map(),
 			error: null,
+			lastRefresh: 0,
 		};
 		lastSuccessfulFingerprint = null;
 		currentFallbackDelay = FALLBACK_BASE_DELAY;
+		if (!ctx.hasUI) return;
 
 		// Show loading state immediately so navigation is not blocked
 		const theme = ctx.ui.theme;

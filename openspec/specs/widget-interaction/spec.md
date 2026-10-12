@@ -64,19 +64,23 @@ The overlay SHALL display a preview pane showing detailed information about the 
 - **THEN** the preview pane updates to show details for the newly selected change
 
 ### Requirement: Letter key actions on selected change
-The user SHALL trigger OpenSpec prompt templates by pressing a single letter key while the overlay is open. The verify action key SHALL only be active when the `opsx-verify` command is registered in the current pi session (detected via `pi.getCommands()`).
+The user SHALL trigger OpenSpec workflows by pressing a single letter key while the overlay is open. The verify action key SHALL only be active when the exact `opsx-verify` alias or `skill:openspec-verify-change` command is registered in the current pi session (detected via `pi.getCommands()`). The alias SHALL be preferred when both are registered.
 
 #### Scenario: Apply action on selected change
 - **WHEN** the user presses `a` while a change is selected
 - **THEN** the overlay closes and the editor is pre-filled with `/opsx-apply <change-name>`
 
-#### Scenario: Verify action on selected change when available
+#### Scenario: Verify action on selected change when alias is available
 - **WHEN** the user presses `v` while a change is selected AND `opsx-verify` is registered via `pi.getCommands()`
 - **THEN** the overlay closes and the editor is pre-filled with `/opsx-verify <change-name>`
 
+#### Scenario: Verify action when only the new upstream skill is available
+- **WHEN** the user presses `v` while a change is selected AND only `skill:openspec-verify-change` is registered
+- **THEN** the overlay closes and the editor is pre-filled with `/skill:openspec-verify-change <change-name>`
+
 #### Scenario: Verify key ignored when not available
-- **WHEN** the user presses `v` while a change is selected AND `opsx-verify` is NOT registered
-- **THEN** the keypress is ignored (no action taken, overlay remains open)
+- **WHEN** neither exact verify command is registered, even if a similarly named command exists
+- **THEN** pressing `v` is ignored (no action taken, overlay remains open)
 
 #### Scenario: Explore action on selected change
 - **WHEN** the user presses `e` while a change is selected
@@ -115,18 +119,18 @@ After triggering an action, the overlay SHALL close and keyboard focus SHALL ret
 - **AND** the editor contains the pre-filled prompt template text
 
 ### Requirement: Action hints displayed
-The overlay SHALL display a hint bar showing available action keys and their functions. The verify hint SHALL only appear when the `opsx-verify` command is registered (detected via `pi.getCommands()`).
+The overlay SHALL display a hint bar showing available action keys and their functions. The verify hint SHALL only appear when one of the exact supported verify commands is registered (detected via `pi.getCommands()`).
 
 #### Scenario: Full hint bar with changes (verify available)
-- **WHEN** the overlay is open, active changes exist, AND `opsx-verify` is registered
+- **WHEN** the overlay is open, active changes exist, AND `opsx-verify` or `skill:openspec-verify-change` is registered
 - **THEN** the hint bar shows "a apply · v verify · e explore · c archive · p propose new · esc cancel"
 
 #### Scenario: Full hint bar with changes (verify unavailable)
-- **WHEN** the overlay is open, active changes exist, AND `opsx-verify` is NOT registered
+- **WHEN** the overlay is open, active changes exist, AND neither exact supported verify command is registered
 - **THEN** the hint bar shows "a apply · e explore · c archive · p propose new · esc cancel"
 
 #### Scenario: Empty state hint bar
-- **WHEN** the overlay is open and no active changes exist
+- **WHEN** the overlay shows the empty state
 - **THEN** the hint bar shows "p propose new · esc cancel" with other action labels shown in muted/dim style
 
 ### Requirement: Data is fetched on overlay open
@@ -136,4 +140,32 @@ The overlay SHALL fetch fresh change data when it opens, using the same data lay
 - **WHEN** the overlay opens
 - **THEN** it calls `fetchActiveChanges()` to get the current state of all changes, using the resolved `openspec/changes` directory (current working directory or git root fallback)
 - **AND** displays the result (or an error indicator if the CLI fails)
+
+### Requirement: Safe editor action construction
+The overlay SHALL construct apply, verify, explore, and archive editor commands only from a change identifier that has passed the extension's identifier validation. It SHALL never insert unvalidated CLI-derived text into the editor.
+
+#### Scenario: Selected change has an invalid identifier
+- **WHEN** an overlay action is requested for a change name that fails identifier validation
+- **THEN** the overlay SHALL not pre-fill an OpenSpec action command
+- **AND** the extension SHALL notify the user that the change data is invalid
+
+#### Scenario: Selected change has a valid identifier
+- **WHEN** the user selects a valid change identifier and presses an available action key
+- **THEN** the overlay SHALL pre-fill only the expected slash command followed by that validated identifier
+- **AND** the editor text SHALL contain no additional CLI-derived lines or commands
+
+### Requirement: Safe interactive display text
+The overlay SHALL use sanitized display text for all externally derived change, schema, artifact, task-group, and error values.
+
+#### Scenario: Change name contains a control sequence
+- **WHEN** the overlay receives a change name containing terminal control characters
+- **THEN** the overlay SHALL not render the unsanitized sequence
+- **AND** navigation, selection, and action hints SHALL remain visually intact
+
+### Requirement: Loading overlay disposal
+Closing or cancelling the loading overlay SHALL dispose its animation timer. A late data-fetch result SHALL not finish a cancelled interaction again or open the change list.
+
+#### Scenario: Cancel during data fetch
+- **WHEN** the user presses escape while change data is being fetched
+- **THEN** the loading overlay closes, its animation timer stops, and late fetch results do not change the editor or reopen an overlay
 

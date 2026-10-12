@@ -7,6 +7,7 @@ import { test } from "node:test";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { createOpenSpecExecutor, crossSpawnExec, execOpenSpec } from "../extension/cli.ts";
 import { checkCliAvailable, getChangeStatus, listChanges, resetOpenSpecDir } from "../extension/openspec.ts";
+import { detail } from "../test/fixtures.ts";
 
 type Exec = typeof crossSpawnExec;
 const success = { stdout: "1.14.0", stderr: "", code: 0, killed: false };
@@ -160,11 +161,11 @@ test("availability, list, and status use the shared executor with their working 
 	const calls: Parameters<Exec>[] = [];
 	const pi = api(async (...args) => {
 		calls.push(args);
-		return { ...success, stdout: args[1][0] === "list" ? '{"changes":[]}' : '{}' };
+		return { ...success, stdout: args[1][0] === "list" ? '{"changes":[]}' : JSON.stringify(detail("demo")) };
 	});
 	assert.deepEqual(await checkCliAvailable(pi, cwd), { available: true });
 	assert.deepEqual(await listChanges(pi, cwd), { changes: [], error: null });
-	assert.deepEqual(await getChangeStatus(pi, "demo", cwd), { detail: {}, error: null });
+	assert.deepEqual(await getChangeStatus(pi, "demo", cwd), { detail: detail("demo"), error: null });
 	assert.deepEqual(calls, [
 		["openspec", ["--version"], { timeout: 5000, cwd }],
 		["openspec", ["list", "--json"], { timeout: 10000, cwd }],
@@ -177,7 +178,7 @@ test("native Windows npm-style launcher works and is cached across data-layer ca
 }, async (t) => {
 	const cwd = await mkdtemp(join(tmpdir(), "openspec shim "));
 	await mkdir(join(cwd, "openspec", "changes"), { recursive: true });
-	await writeFile(join(cwd, "openspec.cmd"), '@echo off\r\necho {"changes":[]}\r\n');
+	await writeFile(join(cwd, "openspec.cmd"), `@echo off\r\nif "%~1"=="status" (\r\necho ${JSON.stringify(detail("demo"))}\r\n) else (\r\necho {"changes":[]}\r\n)\r\n`);
 	t.after(async () => { resetOpenSpecDir(cwd); await rm(cwd, { recursive: true, force: true }); });
 	let directCalls = 0;
 	const pi = api(async () => { directCalls++; return failure; });
