@@ -17,28 +17,11 @@ import {
 import { sanitizeDisplayText } from "./validation.ts";
 
 /**
- * Determine whether full artifact names can fit in the available width.
- * Try rendering mock lines with full names; if they exceed width, use initials.
+ * Determine whether full artifact names fit on the single-change artifact line.
  */
-function shouldUseFullNames(
-	theme: Theme,
-	change: ChangeSummary,
-	detail: ChangeDetail,
-	availableWidth: number,
-	isSingleChange: boolean,
-): boolean {
-	if (isSingleChange) {
-		const artifactStr = renderArtifactPart(theme, detail, true);
-		const line = `Workflow artifacts: ${artifactStr}`;
-		return visibleWidth(line) <= availableWidth;
-	} else {
-		const statusIcon = changeStatusIcon(theme, change, detail);
-		const name = sanitizeDisplayText(change.name);
-		const artifactStr = renderArtifactPart(theme, detail, true);
-		const taskCounter = `${change.completedTasks}/${change.totalTasks}`;
-		const line = `${statusIcon} ${name}  ${artifactStr}  ${taskCounter}`;
-		return visibleWidth(line) <= availableWidth;
-	}
+function shouldUseFullNames(theme: Theme, detail: ChangeDetail, availableWidth: number): boolean {
+	const artifactStr = renderArtifactPart(theme, detail, true);
+	return availableWidth >= 80 && visibleWidth(`Workflow artifacts: ${artifactStr}`) <= availableWidth;
 }
 
 /**
@@ -51,7 +34,7 @@ export function renderSingleChange(
 	availableWidth: number,
 ): string[] {
 	const lines: string[] = [];
-	const useFullNames = shouldUseFullNames(theme, change, detail, availableWidth, true);
+	const useFullNames = shouldUseFullNames(theme, detail, availableWidth);
 
 	// Line 1: Status icon + change name + schema
 	const statusIcon = changeStatusIcon(theme, change, detail);
@@ -63,7 +46,9 @@ export function renderSingleChange(
 	lines.push(truncateToWidth(theme.fg("muted", "Workflow artifacts: ") + artifactStr, availableWidth, "…"));
 
 	// Line 3: Task progress bar (no apply suffix)
-	const taskBar = progressBar(theme, change.completedTasks, change.totalTasks);
+	const taskBar = availableWidth < 80
+		? theme.fg("text", `${change.completedTasks}/${change.totalTasks}`)
+		: progressBar(theme, change.completedTasks, change.totalTasks);
 	lines.push(truncateToWidth(`${theme.fg("muted", "OpenSpec task progress: ")}${taskBar}`, availableWidth, "…"));
 
 	return lines;
@@ -81,27 +66,20 @@ export function renderMultiChange(
 	const lines: string[] = [];
 
 	// Header line
-	lines.push(theme.fg("accent", `OpenSpec (${changes.length} active)`));
+	lines.push(truncateToWidth(theme.fg("accent", `OpenSpec (${changes.length} active)`), availableWidth, "…"));
 
-	for (const change of changes) {
+	// Align artifact columns, but size the name cell to the longest displayed
+	// name rather than reserving the full maximum width for every change.
+	const maxNameWidth = Math.max(1, Math.floor(availableWidth * 0.35));
+	const displayedNames = changes.map((change) => truncateToWidth(sanitizeDisplayText(change.name), maxNameWidth, "…"));
+	const nameWidth = Math.max(1, ...displayedNames.map(visibleWidth));
+	const rows = changes.map((change, index) => {
 		const detail = details.get(change.name);
 		const statusIcon = changeStatusIcon(theme, change, detail);
-
-		// Determine width for change name
-		const nameWidth = Math.floor(availableWidth * 0.2);
-		const truncatedName = truncateToWidth(sanitizeDisplayText(change.name), nameWidth, "…");
-
-		// Artifact portion: use full names if width permits, initials otherwise
-		let artifactPart = "";
-		if (detail) {
-			const useFullNames = shouldUseFullNames(theme, change, detail, availableWidth, false);
-			artifactPart = renderArtifactPart(theme, detail, useFullNames);
-		}
-
-		// Task counter
+		const truncatedName = displayedNames[index]!;
+		const paddedName = truncatedName + " ".repeat(Math.max(0, nameWidth - visibleWidth(truncatedName)));
 		const taskCounter = theme.fg("text", `${change.completedTasks}/${change.totalTasks}`);
 
-		// Blocked dependency hint
 		let blockedHint = "";
 		if (detail && !detail.isComplete) {
 			const blockedArtifacts = detail.artifacts.filter((a) => a.status === "blocked");
@@ -110,7 +88,24 @@ export function renderMultiChange(
 			}
 		}
 
-		const changeLine = `${statusIcon} ${truncatedName}  ${artifactPart}  ${taskCounter}${blockedHint}`;
+		return {
+			detail,
+			rowPrefix: `${statusIcon} ${paddedName}  `,
+			taskCounter,
+			blockedHint,
+		};
+	});
+
+	// Decide once for the whole list, using the actual truncated/padded name
+	// cells and every row's counter and blocked hint. This prevents mixed labels.
+	const fullNamesFit = availableWidth >= 80 && rows.every(({ detail, rowPrefix, taskCounter, blockedHint }) => {
+		const artifactPart = detail ? renderArtifactPart(theme, detail, true) : "";
+		return visibleWidth(`${rowPrefix}${artifactPart}  ${taskCounter}${blockedHint}`) <= availableWidth;
+	});
+
+	for (const { detail, rowPrefix, taskCounter, blockedHint } of rows) {
+		const artifactPart = detail ? renderArtifactPart(theme, detail, fullNamesFit) : "";
+		const changeLine = `${rowPrefix}${artifactPart}  ${taskCounter}${blockedHint}`;
 		lines.push(truncateToWidth(changeLine, availableWidth, "…"));
 	}
 
@@ -120,8 +115,8 @@ export function renderMultiChange(
 /**
  * Render the "no changes" message.
  */
-export function renderNoChanges(theme: Theme): string[] {
-	return [theme.fg("muted", "No active OpenSpec changes")];
+export function renderNoChanges(theme: Theme, availableWidth = 120): string[] {
+	return [truncateToWidth(theme.fg("muted", "No active OpenSpec changes"), availableWidth, "…")];
 }
 
 /**
@@ -130,6 +125,21 @@ export function renderNoChanges(theme: Theme): string[] {
 export function renderError(theme: Theme, message: string, availableWidth: number): string[] {
 	const line = theme.fg("warning", `⚠ ${sanitizeDisplayText(message)}`);
 	return [truncateToWidth(line, availableWidth, "…")];
+}
+
+/**
+ * Prefix retained data with a visible warning when a refresh failed. Keeping
+ * the indicator on the first existing line preserves the widget's height.
+ */
+function addStaleIndicator(
+	theme: Theme,
+	lines: string[],
+	message: string,
+	availableWidth: number,
+): string[] {
+	if (lines.length === 0) return renderError(theme, message, availableWidth);
+	const indicator = theme.fg("muted", `⚠ ${sanitizeDisplayText(message)}`);
+	return [truncateToWidth(`${indicator} ${lines[0]}`, availableWidth, "…"), ...lines.slice(1)];
 }
 
 /**
@@ -147,17 +157,21 @@ export function renderWidget(
 	}
 
 	if (changes.length === 0) {
-		return renderNoChanges(theme);
+		return renderNoChanges(theme, availableWidth);
 	}
 
+	let lines: string[];
 	if (changes.length === 1) {
 		const detail = details.get(changes[0]!.name);
 		if (detail) {
-			return renderSingleChange(theme, changes[0]!, detail, availableWidth);
+			lines = renderSingleChange(theme, changes[0]!, detail, availableWidth);
+		} else {
+			// Fall back to multi-change style for single change without detail
+			lines = renderMultiChange(theme, changes, details, availableWidth);
 		}
-		// Fall back to multi-change style for single change without detail
-		return renderMultiChange(theme, changes, details, availableWidth);
+	} else {
+		lines = renderMultiChange(theme, changes, details, availableWidth);
 	}
 
-	return renderMultiChange(theme, changes, details, availableWidth);
+	return error ? addStaleIndicator(theme, lines, error, availableWidth) : lines;
 }

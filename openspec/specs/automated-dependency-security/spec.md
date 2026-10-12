@@ -1,4 +1,9 @@
-## ADDED Requirements
+# automated-dependency-security Specification
+
+## Purpose
+Maintain automated dependency updates, pull-request verification and security monitoring with least-privilege execution.
+
+## Requirements
 
 ### Requirement: Grouped and cooled-down dependency updates
 The repository SHALL configure Dependabot for npm and GitHub Actions updates on a regular schedule, group compatible updates by ecosystem, limit concurrently open update pull requests, and enforce a five-day update cooldown/minimum release age where the selected ecosystem supports Dependabot's native configuration.

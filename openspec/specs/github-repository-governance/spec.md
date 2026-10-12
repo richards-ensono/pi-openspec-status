@@ -1,4 +1,9 @@
-## ADDED Requirements
+# github-repository-governance Specification
+
+## Purpose
+Define repository disclosure, contribution, ownership and workflow-security requirements.
+
+## Requirements
 
 ### Requirement: Security vulnerability reporting policy
 The repository SHALL publish a root-level `SECURITY.md` that identifies supported release expectations, a private vulnerability reporting path, maintainer response expectations, and guidance not to disclose unpatched vulnerabilities publicly.
