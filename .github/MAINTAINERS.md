@@ -30,6 +30,9 @@ If sufficient independent maintainers become available, reassess whether to requ
 ## Scorecard reassessment record
 
 - **Owner:** richards-ensono
-- **Post-90-day Maintained review date:** 2026-07-30
-- At that review, assess the repository-age **Maintained** Scorecard result and record whether it is now eligible to resolve.
+- **Post-90-day Maintained review date:** 2026-10-15
+- **Date basis:** This fork was created on 2026-07-16 at 08:52:15 UTC and reaches 90 days on 2026-10-14 at 08:52:15 UTC. The updated review date supersedes the previous 2026-07-30 plan, which was before eligibility.
+- At that review, inspect a fresh repository-age **Maintained** Scorecard result and record whether it is now eligible to resolve. Age eligibility alone does not establish a passing maintenance score.
+- The 2026-10-12 closeout confirmed the original permission, license and fuzzing alerts fixed. The independent-review, stricter branch-protection, age and Best Practices findings remain documented deferrals, not passing checks.
+- Vulnerability follow-up alert #9 is resolved: [PR #19](https://github.com/richards-ensono/pi-openspec-status/pull/19) merged on 2026-10-12, the subsequent [main-branch Scorecard run](https://github.com/richards-ensono/pi-openspec-status/actions/runs/38223579106) succeeded, and GitHub marked the alert fixed. This does not resolve the four deferred governance/age/badge findings.
 - OpenSSF Best Practices enrollment is optional. The owner will decide whether to create and staff a separate governance initiative when independent maintenance capacity is available.

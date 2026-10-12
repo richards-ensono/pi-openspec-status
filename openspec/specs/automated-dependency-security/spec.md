@@ -1,4 +1,9 @@
-## ADDED Requirements
+# automated-dependency-security Specification
+
+## Purpose
+Maintain automated dependency updates, pull-request verification and security monitoring with least-privilege execution.
+
+## Requirements
 
 ### Requirement: Grouped and cooled-down dependency updates
 The repository SHALL configure Dependabot for npm and GitHub Actions updates on a regular schedule, group compatible updates by ecosystem, limit concurrently open update pull requests, and enforce a five-day update cooldown/minimum release age where the selected ecosystem supports Dependabot's native configuration.
@@ -26,11 +31,12 @@ The repository SHALL run GitHub dependency review for pull requests that change 
 - **THEN** the dependency-review check reports the violation and prevents a successful verification result
 
 ### Requirement: CodeQL source analysis
-The repository SHALL run CodeQL analysis for JavaScript/TypeScript on pull requests, protected-branch pushes, and a recurring schedule, and SHALL publish results to GitHub code scanning when the repository supports result upload.
+The repository SHALL run CodeQL analysis for JavaScript/TypeScript on pull requests, protected-branch pushes, and a recurring schedule. The workflow SHALL declare a read-only top-level `GITHUB_TOKEN` permission default and grant `security-events: write` only to the analysis job that publishes CodeQL results to GitHub code scanning when the repository supports result upload.
 
 #### Scenario: CodeQL finds a source-code issue
 - **WHEN** CodeQL detects a security or quality finding in the extension source
 - **THEN** the finding is available to maintainers through the workflow result or GitHub code-scanning interface
+- **AND** the workflow's other jobs do not inherit `security-events: write`
 
 ### Requirement: OpenSSF Scorecard monitoring
 The repository SHALL run OpenSSF Scorecard on a recurring schedule and protected-branch pushes, using the action's documented least-privilege permissions and publishing the resulting assessment for maintainer review.
@@ -38,3 +44,11 @@ The repository SHALL run OpenSSF Scorecard on a recurring schedule and protected
 #### Scenario: Scheduled repository posture assessment runs
 - **WHEN** the configured Scorecard schedule occurs
 - **THEN** Scorecard evaluates the repository and makes its results available to maintainers
+
+### Requirement: Explicit workflow permission defaults
+Each repository workflow that does not require global write access SHALL declare an explicit read-only top-level `GITHUB_TOKEN` permission default. A job requiring a write capability for a defined action, including code-scanning result upload or npm provenance publication, SHALL declare only that capability at job scope.
+
+#### Scenario: A publishing workflow runs
+- **WHEN** a release tag triggers package publishing
+- **THEN** build and validation run with the workflow's read-only default permissions
+- **AND** only the package publication job receives the OIDC token permission required for npm provenance publishing

@@ -26,4 +26,4 @@
 - [x] 5.1 Update maintainer guidance to distinguish current protections from the single-maintainer limitations on independent review and stricter branch-review scoring.
 - [x] 5.2 Document the post-90-day Maintained reassessment and optional future OpenSSF Best Practices ownership decision.
 - [x] 5.3 Run type checking, linting, and the complete test suite, including property tests.
-- [ ] 5.4 Have the maintainer review the next Scorecard SARIF results and record which alerts resolved versus which remain intentionally deferred.
+- [x] 5.4 Have the maintainer review the next Scorecard SARIF results and record which alerts resolved versus which remain intentionally deferred. See `closeout.md` for the 2026-10-12 maintainer-approved review, deferred findings, and retained follow-ups.
