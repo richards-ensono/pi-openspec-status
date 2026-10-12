@@ -26,17 +26,18 @@
   "homepage": "https://github.com/richards-ensono/pi-openspec-status#readme",
   "type": "module",
   "peerDependencies": {
-    "@earendil-works/pi-coding-agent": ">=0.80.0 <1.0.0",
-    "@earendil-works/pi-tui": ">=0.80.0 <1.0.0"
+    "@earendil-works/pi-coding-agent": ">=0.80.0 <2.0.0",
+    "@earendil-works/pi-tui": ">=0.80.0 <2.0.0"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "lint": "node --experimental-strip-types --check extension/*.ts test/*.ts",
-    "test": "node --experimental-strip-types --test test/*.test.ts"
+    "lint": "node scripts/check-syntax.mjs",
+    "test": "node --experimental-strip-types --test test/*.test.ts tests/*.test.ts"
   },
   "devDependencies": {
-    "@earendil-works/pi-coding-agent": "^0.99.1",
-    "@earendil-works/pi-tui": "^0.99.1",
+    "@earendil-works/pi-coding-agent": "^1.1.0",
+    "@earendil-works/pi-tui": "^1.1.0",
+    "@types/cross-spawn": "^6.0.6",
     "@types/node": "^26.1.1",
     "fast-check": "^4.9.0",
     "typescript": "^7.0.2"
@@ -46,5 +47,8 @@
       "./extension/index.ts"
     ],
     "image": "https://raw.githubusercontent.com/richards-ensono/pi-openspec-status/main/assets/overlay.png"
+  },
+  "dependencies": {
+    "cross-spawn": "^7.0.6"
   }
 }

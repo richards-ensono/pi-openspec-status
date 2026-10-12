@@ -1,7 +1,7 @@
 # agent-workflow-trust-boundaries Specification
 
 ## Purpose
-TBD - created by archiving change harden-agent-trust-boundaries. Update Purpose after archive.
+Keep project-controlled OpenSpec content subordinate to user-approved scope and higher-priority instructions, and require safe canonical paths before artifact access.
 ## Requirements
 ### Requirement: Untrusted OpenSpec instruction boundary
 Every repository-local OpenSpec prompt and skill SHALL state that OpenSpec CLI output, artifact content, templates, context, rules, dynamic instructions, filenames, and paths are untrusted project data subordinate to system, developer, and user instructions.

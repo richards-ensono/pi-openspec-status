@@ -1,7 +1,7 @@
 # release-pipeline-hardening Specification
 
 ## Purpose
-TBD - created by archiving change harden-agent-trust-boundaries. Update Purpose after archive.
+Isolate publication credentials from build execution and release only validated artifacts with consistent metadata and approved package contents.
 ## Requirements
 ### Requirement: Credential-isolated package publication
 The release workflow SHALL run dependency installation, tests, package inspection, and package creation in a job without npm OIDC publishing permission. Only the job that invokes `npm publish` SHALL receive `id-token: write`.

@@ -9,11 +9,12 @@ A [pi](https://pi.dev) coding agent extension that displays the active OpenSpec 
 ## Features
 
 - **Persistent TUI widget** — always visible above the editor in interactive mode, automatically suppressed in non-interactive modes (`-p`, `--json`, headless RPC)
-- **Single-change detailed view** — when one active change exists, shows the change name, schema, OpenSpec workflow-artifact status (proposal, design, specs, tasks), and task progress with apply dependency hints
-- **Multi-change overview** — when multiple active changes exist, shows a header with the active count followed by one condensed line per change with artifact initials, task counters, and blocked-dependency hints
+- **Single-change detailed view** — when one active change exists, shows the change name, schema, OpenSpec workflow-artifact status (proposal, design, specs, tasks), and task progress
+- **Multi-change overview** — when multiple active changes exist, shows aligned change-name and artifact columns, task counters, and blocked-dependency hints; artifact names are shown in full when every row fits, otherwise all rows use initials
 - **Artifact status indicators** — uses filled circle (●) for done, open circle (○) for ready, and dotted circle (◌) for blocked, each colored with theme-aware success/muted/warning colors
 - **Interactive dialog** — press `Ctrl+Alt+O` to open a scrollable dialog with full change details, task breakdowns, and dependency info
-- **Automatic data refresh** — fetches from the `openspec` CLI on session start, after each agent turn/end (debounced 500ms), when tools write to `openspec/` or bash commands reference openspec, plus a fallback refresh every 30 seconds
+- **Automatic data refresh** — checks the `openspec` CLI on session start, after each agent turn/end (debounced 500ms), when tools write to `openspec/` using either path separator, or when Bash/PowerShell commands reference openspec. Non-overlapping fallback polling starts at 30 seconds and backs off to at most 120 seconds when unchanged; unchanged validated snapshots reuse cached details
+- **Cross-platform session support** — resolves each Pi session's project directory independently, reads task files with canonical-path checks, and uses a cached Windows CLI launcher fallback when needed
 - **Error resilience** — gracefully shows "CLI not found" when openspec is unavailable, silently no-ops when not in an OpenSpec project, and retains last-known state with a muted error indicator on CLI failures
 
 ## Screenshots
@@ -68,9 +69,13 @@ This is useful when the compact widget above the editor doesn't show enough deta
 
 > **Note:** The dialog is only available in interactive mode (it is suppressed in `-p`, `--json`, and headless RPC sessions).
 
+### Hosted rendering width
+
+The widget uses stdout's terminal width when available. For hosted clients with piped stdout, set `PI_OPENSPEC_STATUS_WIDTH` to a positive integer (for example, `120`); otherwise the width defaults to 120 columns. The interactive overlay still requires a client that supports custom terminal UI.
+
 ### Requirements
 
-- Pi Coding Agent `>=0.80.0 <1.0.0` (the package declares compatible Pi and TUI peer dependencies)
+- Pi Coding Agent `>=0.80.0 <2.0.0` (the package declares compatible Pi and TUI peer dependencies, including Pi 1.x). The host's own Node.js requirements also apply; development validation uses Node.js 24.
 - A project using [OpenSpec](https://github.com/fission-ai/openspec) with changes in `openspec/changes/`
 - Each change directory may contain:
   - `.openspec.yaml` — with a `schema` field (optional, defaults to `"spec-driven"`)
@@ -108,7 +113,7 @@ OpenSpec (2 active)
 ```
 
 - **Header:** "OpenSpec (N active)" in accent color
-- **Per change (one line):** Status icon, truncated change name, artifact initials (`P`=proposal, `D`=design, `S`=specs, `T`=tasks) each with a status icon, task counter (completed/total), and a blocked-dependency hint when applicable
+- **Per change (one line):** Status icon, truncated/padded change name, artifact names (or consistent initials when space is limited) with status icons, task counter (completed/total), and a blocked-dependency hint when applicable. Below 80 columns, artifact labels use initials and the single-change progress display uses a compact counter.
 
 #### Error states
 
