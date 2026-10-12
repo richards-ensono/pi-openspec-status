@@ -11,7 +11,7 @@ import { Key } from "@earendil-works/pi-tui";
 import type { ChangeSummary, ChangeDetail, OverlayAction } from "./types.ts";
 import { fetchActiveChanges } from "./openspec.ts";
 import { LoadingOverlay, OpenSpecOverlay } from "./overlay.ts";
-import { editorCommandForAction } from "./actions.ts";
+import { editorCommandForAction, verifyCommandForCommands } from "./actions.ts";
 
 /**
  * Register the ctrl+alt+o shortcut that opens the interactive overlay.
@@ -37,14 +37,15 @@ export function registerInteractionShortcut(pi: ExtensionAPI): void {
 					const loader = new LoadingOverlay(tui, theme, "Loading OpenSpec changes...");
 					loader.onAbort = () => done(null);
 
-					fetchActiveChanges(pi)
-						.then((result) => done(result))
-						.catch(() => done(null));
+					fetchActiveChanges(pi, { cwd: ctx.cwd, includeTaskGroups: true })
+						.then((result) => { if (!loader.signal.aborted) done(result); })
+						.catch(() => { if (!loader.signal.aborted) done(null); });
 
 					return {
 						render: (w) => loader.render(w),
 						handleInput: (data) => loader.handleInput(data),
 						invalidate: () => loader.invalidate(),
+						dispose: () => loader.dispose(),
 					};
 				},
 				{ overlay: true },
@@ -54,11 +55,9 @@ export function registerInteractionShortcut(pi: ExtensionAPI): void {
 
 			const { changes, details, taskGroups, error } = fetchResult;
 
-			// Detect verify command availability via pi.getCommands()
-			const commands = pi.getCommands();
-			const hasVerify = commands.some(
-				(c) => c.source === "skill" && c.name.includes("openspec-verify"),
-			);
+			// Do not enable verify for a similarly named but unrelated command.
+			const verifyCommand = verifyCommandForCommands(pi.getCommands());
+			const hasVerify = verifyCommand !== null;
 
 			// Open the change list overlay
 			const actionResult = await ctx.ui.custom<OverlayAction | null>(
@@ -77,8 +76,8 @@ export function registerInteractionShortcut(pi: ExtensionAPI): void {
 			);
 
 			// Only validated change identifiers may be inserted into the editor.
-			if (!actionResult) return;
-			const command = editorCommandForAction(actionResult);
+			if (!actionResult || (actionResult.type === "verify" && !verifyCommand)) return;
+			const command = editorCommandForAction(actionResult, verifyCommand ?? "/opsx-verify");
 			if (command) {
 				ctx.ui.setEditorText(command);
 			} else if (actionResult.type !== "cancel") {

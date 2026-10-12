@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { mkdir, symlink, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { createProject } from "./fixtures.ts";
 import { editorCommandForAction } from "../extension/actions.ts";
 import { fetchTaskGroups, getChangeStatus, resetOpenSpecDir } from "../extension/openspec.ts";
 import { parseTaskGroups } from "../extension/tasks-parser.ts";
@@ -42,44 +45,36 @@ test("task groups count only documented checkbox syntax and sanitize headings", 
 	assert.deepEqual(groups, [{ name: "Build", completed: 1, total: 2, status: "partial" }]);
 });
 
-test("data layer rejects malformed CLI fixture names before commands or file access", async () => {
-	const calls: Array<{ command: string; args: string[]; cwd?: string }> = [];
-	const pi = {
-		exec: async (command: string, args: string[], options: { cwd?: string } = {}) => {
-			calls.push({ command, args, cwd: options.cwd });
-			if (command === "test") return { code: 0, stdout: "" };
-			if (command === "realpath") {
-				const path = args[1] === "." ? "" : `/${args[1]}`;
-				return { code: 0, stdout: `${process.cwd()}${path}\n` };
-			}
-			if (command === "cat") return { code: 0, stdout: "## Group\n- [ ] safe task\n" };
-			return { code: 0, stdout: JSON.stringify({ changeName: "fix-issue-42", schemaName: "spec-driven", isComplete: false, applyRequires: [], artifacts: [] }) };
-		},
-	} as never;
+test("data layer rejects malformed CLI fixture names before commands or file access", async (t) => {
+	const root = await createProject(t);
+	const changeDir = join(root, "openspec", "changes", "fix-issue-42");
+	await mkdir(changeDir);
+	await writeFile(join(changeDir, "tasks.md"), "## Group\n- [ ] safe task\n");
+	const calls: string[] = [];
+	const pi = { exec: async (command: string) => { calls.push(command); throw new Error("Unexpected subprocess"); } } as never;
 	resetOpenSpecDir();
-	const invalid = await getChangeStatus(pi, "../escape");
+	const invalid = await getChangeStatus(pi, "../escape", root);
 	assert.equal(invalid.detail, null);
-	assert.equal(calls.some(({ command }) => command === "openspec"), false);
-	const groups = await fetchTaskGroups(pi, "fix-issue-42");
-	assert.equal(groups[0]?.total, 1);
-	assert.deepEqual(calls.at(-1), { command: "cat", args: ["--", "openspec/changes/fix-issue-42/tasks.md"], cwd: process.cwd() });
+	assert.deepEqual(await fetchTaskGroups(pi, "../escape", root), []);
+	const groups = await fetchTaskGroups(pi, "fix-issue-42", root);
+	assert.deepEqual(groups, [{ name: "Group", completed: 0, total: 1, status: "none" }]);
+	assert.deepEqual(calls, [], "invalid names and filesystem task reads must not launch commands");
 });
 
-test("task reads reject canonical paths outside the validated change directory", async () => {
-	const calls: string[] = [];
-	const pi = {
-		exec: async (command: string, args: string[]) => {
-			calls.push(command);
-			if (command === "test") return { code: 0, stdout: "" };
-			if (command === "realpath" && args[1] === ".") return { code: 0, stdout: `${process.cwd()}\n` };
-			if (command === "realpath" && args[1]?.endsWith("tasks.md")) return { code: 0, stdout: "/outside/tasks.md\n" };
-			if (command === "realpath") return { code: 0, stdout: `${process.cwd()}/openspec/changes/fix-issue-42\n` };
-			return { code: 0, stdout: "" };
-		},
-	} as never;
+test("task reads reject canonical paths outside the validated change directory", async (t) => {
+	const root = await createProject(t);
+	const outside = join(root, "outside");
+	const changeDir = join(root, "openspec", "changes", "fix-issue-42");
+	await mkdir(outside);
+	await mkdir(changeDir);
+	await writeFile(join(outside, "tasks.md"), "## Outside\n- [ ] synthetic task\n");
+	await symlink(join(outside, "tasks.md"), join(changeDir, "tasks.md"));
+	await symlink(outside, join(root, "openspec", "changes", "linked-change"));
+	const pi = { exec: async () => { throw new Error("Unexpected subprocess"); } } as never;
 	resetOpenSpecDir();
-	assert.deepEqual(await fetchTaskGroups(pi, "fix-issue-42"), []);
-	assert.equal(calls.includes("cat"), false);
+	assert.deepEqual(await fetchTaskGroups(pi, "fix-issue-42", root), []);
+	assert.deepEqual(await fetchTaskGroups(pi, "linked-change", root), []);
+	assert.deepEqual(await fetchTaskGroups(pi, "../../outside", root), []);
 });
 
 test("rendering and editor commands cannot contain untrusted injected lines", () => {
